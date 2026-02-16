@@ -7,8 +7,8 @@ export const DROP_END_DATE =
 export const PRODUCT = {
   name: "T-shirt UNTOLD – Limited Edition",
   slug: "tshirt-untold-limited",
-  price: 4900, // centimes (49 €)
-  priceDisplay: "49 €",
+  price: 5900, // centimes (59 €)
+  priceDisplay: "59 €",
   currency: "eur",
   sizes: ["S", "M", "L"] as const,
   description:

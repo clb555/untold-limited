@@ -105,75 +105,91 @@ export async function POST(req: NextRequest) {
 }
 
 // ---------------------------------------------------------------------------
-// POD Order creation (adapt to your provider: Printful, Gelato, Printify)
+// Gelato POD — Draft order (manual validation in Gelato dashboard)
 // ---------------------------------------------------------------------------
 
-async function createPodOrder(session: Stripe.Checkout.Session) {
-  const podApiKey = process.env.POD_API_KEY;
-  const podApiUrl = process.env.POD_API_URL;
+const GELATO_API_URL = "https://order.gelatoapis.com/v4/orders";
+const GELATO_PRODUCT_UID = "b701db3e-a443-48da-b7be-91758a2ff7c5";
 
-  if (!podApiKey || !podApiUrl) {
-    console.warn("[webhook] POD not configured, skipping order creation");
+function getGelatoSize(size: string): string {
+  const sizeMap: Record<string, string> = {
+    S: "S",
+    M: "M",
+    L: "L",
+  };
+  return sizeMap[size] || "M";
+}
+
+async function createPodOrder(session: Stripe.Checkout.Session) {
+  const apiKey = process.env.GELATO_API_KEY;
+
+  if (!apiKey) {
+    console.warn("[webhook] Gelato API key not configured, skipping order");
     return;
   }
 
   const size = session.metadata?.size || "M";
   const shipping = session.shipping_details;
+  const nameParts = (shipping?.name || session.customer_details?.name || "").split(" ");
+  const firstName = nameParts[0] || "";
+  const lastName = nameParts.slice(1).join(" ") || "";
 
   const orderPayload = {
-    external_id: session.id,
-    recipient: {
-      name: shipping?.name || session.customer_details?.name || "",
-      address1: shipping?.address?.line1 || "",
-      address2: shipping?.address?.line2 || "",
-      city: shipping?.address?.city || "",
-      state_code: shipping?.address?.state || "",
-      country_code: shipping?.address?.country || "FR",
-      zip: shipping?.address?.postal_code || "",
-      email: session.customer_details?.email || "",
-    },
+    orderType: "draft",
+    orderReferenceId: session.id,
+    customerReferenceId: session.customer_details?.email || session.id,
+    currency: "EUR",
     items: [
       {
-        variant_id: getPodVariantId(size),
+        itemReferenceId: `${session.id}-tshirt`,
+        productUid: GELATO_PRODUCT_UID,
         quantity: 1,
-        name: `T-shirt UNTOLD – Taille ${size}`,
+        files: [
+          {
+            type: "default",
+            url: `${process.env.NEXT_PUBLIC_SITE_URL || "https://untold-limited.com"}/tshirt-front.png`,
+          },
+          {
+            type: "back",
+            url: `${process.env.NEXT_PUBLIC_SITE_URL || "https://untold-limited.com"}/tshirt-back.png`,
+          },
+        ],
       },
     ],
+    shippingAddress: {
+      firstName,
+      lastName,
+      addressLine1: shipping?.address?.line1 || "",
+      addressLine2: shipping?.address?.line2 || "",
+      city: shipping?.address?.city || "",
+      state: shipping?.address?.state || "",
+      postCode: shipping?.address?.postal_code || "",
+      country: shipping?.address?.country || "FR",
+      email: session.customer_details?.email || "",
+    },
+    metadata: {
+      size: getGelatoSize(size),
+    },
   };
 
   try {
-    const res = await fetch(`${podApiUrl}/orders`, {
+    const res = await fetch(GELATO_API_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${podApiKey}`,
+        "X-API-KEY": apiKey,
       },
       body: JSON.stringify(orderPayload),
     });
 
     if (!res.ok) {
       const errorText = await res.text();
-      console.error(
-        `[webhook] POD order failed (${res.status}):`,
-        errorText
-      );
+      console.error(`[webhook] Gelato order failed (${res.status}):`, errorText);
     } else {
-      console.log("[webhook] POD order created successfully");
+      const data = await res.json();
+      console.log("[webhook] Gelato draft order created:", data.id);
     }
   } catch (err) {
-    console.error("[webhook] POD API error:", err);
+    console.error("[webhook] Gelato API error:", err);
   }
-}
-
-/**
- * Map size to POD variant ID.
- * Replace these with your actual variant IDs from your POD provider.
- */
-function getPodVariantId(size: string): number {
-  const variantMap: Record<string, number> = {
-    S: 0, // Replace with actual variant IDs
-    M: 0,
-    L: 0,
-  };
-  return variantMap[size] || variantMap["M"];
 }
