@@ -109,15 +109,19 @@ export async function POST(req: NextRequest) {
 // ---------------------------------------------------------------------------
 
 const GELATO_API_URL = "https://order.gelatoapis.com/v4/orders";
-const GELATO_PRODUCT_UID = "b701db3e-a443-48da-b7be-91758a2ff7c5";
 
-function getGelatoSize(size: string): string {
+// Base product UID — replace `{size}` with s / m / l at runtime
+const GELATO_PRODUCT_UID_BASE =
+  "apparel_product_gca_t-shirt_gsc_crewneck_gcu_unisex_gqa_classic_gsi_{size}_gco_black_gpr_4-4_inlbl_next-level_3600";
+
+function getGelatoProductUid(size: string): string {
   const sizeMap: Record<string, string> = {
-    S: "S",
-    M: "M",
-    L: "L",
+    S: "s",
+    M: "m",
+    L: "l",
   };
-  return sizeMap[size] || "M";
+  const gelatoSize = sizeMap[size] || "m";
+  return GELATO_PRODUCT_UID_BASE.replace("{size}", gelatoSize);
 }
 
 async function createPodOrder(session: Stripe.Checkout.Session) {
@@ -129,6 +133,7 @@ async function createPodOrder(session: Stripe.Checkout.Session) {
   }
 
   const size = session.metadata?.size || "M";
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://untold-limited.com";
   const shipping = session.shipping_details;
   const nameParts = (shipping?.name || session.customer_details?.name || "").split(" ");
   const firstName = nameParts[0] || "";
@@ -142,16 +147,20 @@ async function createPodOrder(session: Stripe.Checkout.Session) {
     items: [
       {
         itemReferenceId: `${session.id}-tshirt`,
-        productUid: GELATO_PRODUCT_UID,
+        productUid: getGelatoProductUid(size),
         quantity: 1,
         files: [
           {
             type: "default",
-            url: `${process.env.NEXT_PUBLIC_SITE_URL || "https://untold-limited.com"}/tshirt-front.png`,
+            url: `${siteUrl}/tshirt-front.png`,
           },
           {
             type: "back",
-            url: `${process.env.NEXT_PUBLIC_SITE_URL || "https://untold-limited.com"}/tshirt-back.png`,
+            url: `${siteUrl}/tshirt-back.png`,
+          },
+          {
+            type: "neck-inner",
+            url: `${siteUrl}/label-neck.png`,
           },
         ],
       },
@@ -168,7 +177,7 @@ async function createPodOrder(session: Stripe.Checkout.Session) {
       email: session.customer_details?.email || "",
     },
     metadata: {
-      size: getGelatoSize(size),
+      size,
     },
   };
 
