@@ -110,19 +110,13 @@ export async function POST(req: NextRequest) {
 
 const GELATO_API_URL = "https://order.gelatoapis.com/v4/orders";
 
-// Base product UID — replace `{size}` with s / m / l at runtime
-const GELATO_PRODUCT_UID_BASE =
-  "apparel_product_gca_t-shirt_gsc_crewneck_gcu_unisex_gqa_classic_gsi_{size}_gco_black_gpr_4-4_inlbl_next-level_3600";
-
-function getGelatoProductUid(size: string): string {
-  const sizeMap: Record<string, string> = {
-    S: "s",
-    M: "m",
-    L: "l",
-  };
-  const gelatoSize = sizeMap[size] || "m";
-  return GELATO_PRODUCT_UID_BASE.replace("{size}", gelatoSize);
-}
+// Store product variant IDs — from Gelato store "UNTOLD-LIMITED"
+// These reference the template design with exact positioning.
+const GELATO_VARIANT_IDS: Record<string, string> = {
+  S: "f90cb95f-d163-4dc7-8665-33eeb77551f3",
+  M: "4204f18c-d71f-4cff-a8bf-eda908bfdd23",
+  L: "678028f1-a0c5-4731-b642-34737d58f26b",
+};
 
 async function createPodOrder(session: Stripe.Checkout.Session) {
   const apiKey = process.env.GELATO_API_KEY;
@@ -133,7 +127,6 @@ async function createPodOrder(session: Stripe.Checkout.Session) {
   }
 
   const size = session.metadata?.size || "M";
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://untold-limited.com";
   const shipping = session.shipping_details;
   const nameParts = (shipping?.name || session.customer_details?.name || "").split(" ");
   const firstName = nameParts[0] || "";
@@ -147,22 +140,8 @@ async function createPodOrder(session: Stripe.Checkout.Session) {
     items: [
       {
         itemReferenceId: `${session.id}-tshirt`,
-        productUid: getGelatoProductUid(size),
+        storeProductVariantId: GELATO_VARIANT_IDS[size] || GELATO_VARIANT_IDS.M,
         quantity: 1,
-        files: [
-          {
-            type: "default",
-            url: `${siteUrl}/tshirt-front.png`,
-          },
-          {
-            type: "back",
-            url: `${siteUrl}/tshirt-back.png`,
-          },
-          {
-            type: "neck-inner",
-            url: `${siteUrl}/label-neck.png`,
-          },
-        ],
       },
     ],
     shippingAddress: {
