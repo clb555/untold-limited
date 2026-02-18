@@ -105,79 +105,73 @@ export async function POST(req: NextRequest) {
 }
 
 // ---------------------------------------------------------------------------
-// Gelato POD — Draft order (manual validation in Gelato dashboard)
+// Printful POD — Draft order (manual confirmation in Printful dashboard)
+// Uses sync_variant_id: Printful already knows the design from the saved product.
 // ---------------------------------------------------------------------------
 
-const GELATO_API_URL = "https://order.gelatoapis.com/v4/orders";
+const PRINTFUL_API_URL = "https://api.printful.com/orders";
 
-// Store product variant IDs — from Gelato store "UNTOLD-LIMITED"
-// These reference the template design with exact positioning.
-const GELATO_VARIANT_IDS: Record<string, string> = {
-  S: "f90cb95f-d163-4dc7-8665-33eeb77551f3",
-  M: "4204f18c-d71f-4cff-a8bf-eda908bfdd23",
-  L: "678028f1-a0c5-4731-b642-34737d58f26b",
+// Printful sync variant IDs — Cotton Heritage MC1087, Black
+const PRINTFUL_VARIANT_IDS: Record<string, number> = {
+  S: 5200852325,
+  M: 5200852326,
+  L: 5200852327,
 };
 
 async function createPodOrder(session: Stripe.Checkout.Session) {
-  const apiKey = process.env.GELATO_API_KEY;
+  const apiKey = process.env.PRINTFUL_API_KEY;
 
   if (!apiKey) {
-    console.warn("[webhook] Gelato API key not configured, skipping order");
+    console.warn("[webhook] Printful API key not configured, skipping order");
     return;
   }
 
   const size = session.metadata?.size || "M";
+  const syncVariantId = PRINTFUL_VARIANT_IDS[size] || PRINTFUL_VARIANT_IDS.M;
+
   const shipping = session.shipping_details;
-  const nameParts = (shipping?.name || session.customer_details?.name || "").split(" ");
-  const firstName = nameParts[0] || "";
-  const lastName = nameParts.slice(1).join(" ") || "";
+  const recipientName =
+    shipping?.name || session.customer_details?.name || "";
 
   const orderPayload = {
-    orderType: "draft",
-    orderReferenceId: session.id,
-    customerReferenceId: session.customer_details?.email || session.id,
-    currency: "EUR",
+    external_id: session.id,
+    recipient: {
+      name: recipientName,
+      address1: shipping?.address?.line1 || "",
+      address2: shipping?.address?.line2 || "",
+      city: shipping?.address?.city || "",
+      state_code: shipping?.address?.state || "",
+      country_code: shipping?.address?.country || "FR",
+      zip: shipping?.address?.postal_code || "",
+      email: session.customer_details?.email || "",
+    },
     items: [
       {
-        itemReferenceId: `${session.id}-tshirt`,
-        storeProductVariantId: GELATO_VARIANT_IDS[size] || GELATO_VARIANT_IDS.M,
+        sync_variant_id: syncVariantId,
         quantity: 1,
       },
     ],
-    shippingAddress: {
-      firstName,
-      lastName,
-      addressLine1: shipping?.address?.line1 || "",
-      addressLine2: shipping?.address?.line2 || "",
-      city: shipping?.address?.city || "",
-      state: shipping?.address?.state || "",
-      postCode: shipping?.address?.postal_code || "",
-      country: shipping?.address?.country || "FR",
-      email: session.customer_details?.email || "",
-    },
-    metadata: {
-      size,
-    },
   };
 
   try {
-    const res = await fetch(GELATO_API_URL, {
+    // POST without ?confirm=true → creates a draft order
+    const res = await fetch(PRINTFUL_API_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "X-API-KEY": apiKey,
+        Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify(orderPayload),
     });
 
     if (!res.ok) {
       const errorText = await res.text();
-      console.error(`[webhook] Gelato order failed (${res.status}):`, errorText);
+      console.error(`[webhook] Printful order failed (${res.status}):`, errorText);
     } else {
       const data = await res.json();
-      console.log("[webhook] Gelato draft order created:", data.id);
+      console.log("[webhook] Printful draft order created:", data.result?.id);
     }
   } catch (err) {
-    console.error("[webhook] Gelato API error:", err);
+    console.error("[webhook] Printful API error:", err);
   }
 }
