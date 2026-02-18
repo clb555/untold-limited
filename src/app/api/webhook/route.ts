@@ -126,15 +126,18 @@ async function createPodOrder(session: Stripe.Checkout.Session) {
     return;
   }
 
-  const size = session.metadata?.size || "M";
+  // Retrieve full session — webhook payload may omit shipping_details
+  const fullSession = await stripe.checkout.sessions.retrieve(session.id);
+
+  const size = fullSession.metadata?.size || "M";
   const syncVariantId = PRINTFUL_VARIANT_IDS[size] || PRINTFUL_VARIANT_IDS.M;
 
-  const shipping = session.shipping_details;
+  const shipping = fullSession.shipping_details;
   const recipientName =
-    shipping?.name || session.customer_details?.name || "";
+    shipping?.name || fullSession.customer_details?.name || "";
 
   const orderPayload = {
-    external_id: session.id,
+    external_id: fullSession.id,
     recipient: {
       name: recipientName,
       address1: shipping?.address?.line1 || "",
@@ -143,7 +146,7 @@ async function createPodOrder(session: Stripe.Checkout.Session) {
       state_code: shipping?.address?.state || "",
       country_code: shipping?.address?.country || "FR",
       zip: shipping?.address?.postal_code || "",
-      email: session.customer_details?.email || "",
+      email: fullSession.customer_details?.email || "",
     },
     items: [
       {
