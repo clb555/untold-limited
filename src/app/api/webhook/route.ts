@@ -136,11 +136,7 @@ async function createPodOrder(session: Stripe.Checkout.Session) {
   const recipientName =
     shipping?.name || fullSession.customer_details?.name || "";
 
-  // Printful external_id has length limits — strip Stripe prefix, cap at 36 chars
-  const shortId = fullSession.id.replace(/^cs_(test|live)_/, "").slice(0, 36);
-
   const orderPayload = {
-    external_id: shortId,
     recipient: {
       name: recipientName,
       address1: shipping?.address?.line1 || "",
