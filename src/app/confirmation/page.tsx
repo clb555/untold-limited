@@ -5,6 +5,12 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { PRODUCT, SITE } from "@/lib/constants";
 
+declare global {
+  interface Window {
+    fbq?: (...args: unknown[]) => void;
+  }
+}
+
 interface OrderInfo {
   email: string;
   size: string;
@@ -25,6 +31,14 @@ function ConfirmationContent() {
         size: "",
         amount: PRODUCT.priceDisplay,
       });
+
+      // Meta Pixel — track purchase conversion
+      if (typeof window !== "undefined" && typeof window.fbq === "function") {
+        window.fbq("track", "Purchase", {
+          value: PRODUCT.price / 100,
+          currency: "EUR",
+        });
+      }
     }
   }, [sessionId]);
 

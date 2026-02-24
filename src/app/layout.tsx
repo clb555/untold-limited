@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { SITE } from "@/lib/constants";
+import MetaPixel from "@/components/MetaPixel";
+import CookieConsent from "@/components/CookieConsent";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -61,6 +63,8 @@ export default function RootLayout({
         />
       </head>
       <body className="grain">
+        <MetaPixel />
+        <CookieConsent />
         <main className="min-h-screen">{children}</main>
       </body>
     </html>

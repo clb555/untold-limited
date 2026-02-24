@@ -35,10 +35,14 @@ export default function PrivacyPage() {
         .
       </p>
 
-      <h2>4. Cookies</h2>
+      <h2>4. Cookies et mesure d&apos;audience</h2>
       <p>
-        Le site utilise uniquement les cookies nécessaires au fonctionnement
-        du paiement. Aucun cookie publicitaire ou de tracking.
+        Le site utilise les cookies nécessaires au fonctionnement du paiement.
+        Avec votre consentement, nous utilisons également le Meta Pixel
+        (Facebook) pour mesurer l&apos;efficacité de nos campagnes
+        publicitaires. Ce cookie n&apos;est déposé que si vous acceptez via
+        la bannière affichée lors de votre première visite. Vous pouvez
+        modifier votre choix en supprimant les cookies de votre navigateur.
       </p>
     </>
   );
