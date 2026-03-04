@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
 import { getSoldCount, invalidateStockCache } from "@/lib/stock";
-import { MAX_STOCK, PRODUCT } from "@/lib/constants";
+import { MAX_STOCK, PRODUCT, SITE } from "@/lib/constants";
+import { sendPurchaseEvent } from "@/lib/meta-capi";
 import Stripe from "stripe";
 
 // In-memory idempotency set — prevents processing the same event twice.
@@ -91,6 +92,18 @@ export async function POST(req: NextRequest) {
       }
 
       return NextResponse.json({ received: true, refunded: true });
+    }
+
+    // Send Purchase event to Meta Conversions API
+    const email = session.customer_details?.email ?? "";
+    if (email) {
+      await sendPurchaseEvent({
+        email,
+        value: PRODUCT.price,
+        currency: PRODUCT.currency,
+        eventId: session.id,
+        sourceUrl: SITE.url,
+      });
     }
 
     // Create Print on Demand order
