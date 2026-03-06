@@ -1,6 +1,9 @@
 /** Hard-capped at 500 — must never be overridden by env vars. */
 export const MAX_STOCK = 500;
 
+/** Display offset — adds fake sold units for FOMO effect. Does not affect real stock logic. */
+export const STOCK_DISPLAY_OFFSET = 118;
+
 export const DROP_END_DATE =
   process.env.NEXT_PUBLIC_DROP_END_DATE || "2026-03-19T23:59:59Z";
 

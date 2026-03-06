@@ -1,5 +1,5 @@
 import { stripe } from "./stripe";
-import { MAX_STOCK, DROP_END_DATE, PRODUCT } from "./constants";
+import { MAX_STOCK, STOCK_DISPLAY_OFFSET, DROP_END_DATE, PRODUCT } from "./constants";
 
 /**
  * Stock management via Stripe — counts completed checkout sessions.
@@ -63,7 +63,7 @@ export async function getStock(): Promise<number> {
 
   try {
     const totalSold = await countSold();
-    const remaining = Math.max(0, MAX_STOCK - totalSold);
+    const remaining = Math.max(0, MAX_STOCK - totalSold - STOCK_DISPLAY_OFFSET);
     cachedStock = { value: remaining, timestamp: Date.now() };
     return remaining;
   } catch (err) {
