@@ -16,7 +16,7 @@ export const PRODUCT = {
   sizes: ["S", "M", "L"] as const,
   description:
     "Édition limitée à 500 exemplaires. Impression premium sur coton bio 240g. Design exclusif.",
-  shippingDelay: "7 à 15 jours ouvrés",
+  shippingDelay: "7 à 10 jours ouvrés",
 } as const;
 
 export type Size = (typeof PRODUCT.sizes)[number];
