@@ -5,7 +5,7 @@ export const MAX_STOCK = 500;
 export const STOCK_DISPLAY_OFFSET = 118;
 
 export const DROP_END_DATE =
-  process.env.NEXT_PUBLIC_DROP_END_DATE || "2026-03-19T23:59:59Z";
+  process.env.NEXT_PUBLIC_DROP_END_DATE || "2026-03-23T23:59:59Z";
 
 export const PRODUCT = {
   name: "T-shirt UNTOLD – Limited Edition",
