@@ -30,7 +30,7 @@ export default function TshirtScene() {
         onMouseLeave={() => setIsZoomed(false)}
       >
         <Image
-          src="/tshirt-front.png"
+          src="/mockup-flat-front.png"
           alt="T-shirt UNTOLD – Face avant"
           fill
           unoptimized

@@ -119,7 +119,7 @@ export default function Hero() {
 
   const scrollToProduct = () => {
     document
-      .getElementById("product")
+      .getElementById("manifeste")
       ?.scrollIntoView({ behavior: "smooth" });
   };
 

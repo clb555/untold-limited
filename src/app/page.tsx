@@ -1,4 +1,5 @@
 import Hero from "@/components/Hero";
+import Manifeste from "@/components/Manifeste";
 import ProductSection from "@/components/ProductSection";
 import Footer from "@/components/Footer";
 
@@ -6,6 +7,7 @@ export default function Home() {
   return (
     <div className="page-enter">
       <Hero />
+      <Manifeste />
       <ProductSection />
 
       {/* Tagline */}

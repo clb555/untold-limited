@@ -68,7 +68,7 @@ export async function getStock(): Promise<number> {
     return remaining;
   } catch (err) {
     console.error("[stock] Error fetching from Stripe:", err);
-    return cachedStock?.value ?? MAX_STOCK;
+    return cachedStock?.value ?? Math.max(0, MAX_STOCK - STOCK_DISPLAY_OFFSET);
   }
 }
 
